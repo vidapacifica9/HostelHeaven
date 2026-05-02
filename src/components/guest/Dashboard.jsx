@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Key, Wifi, LogOut, Info, Map, MessageSquare } from 'lucide-react';
+import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag } from 'lucide-react';
 import Events from './Events';
 import Chatbot from './Chatbot';
+import Store from './Store';
 
-const Dashboard = ({ hostelInfo }) => {
+const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
 
@@ -46,6 +47,13 @@ const Dashboard = ({ hostelInfo }) => {
           style={{ backgroundColor: activeTab !== 'chat' ? 'var(--surface)' : '', color: activeTab !== 'chat' ? 'var(--text-main)' : '' }}
         >
           <MessageSquare size={18} /> Concierge
+        </button>
+        <button 
+          onClick={() => setActiveTab('store')}
+          className={`btn ${activeTab === 'store' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'store' ? 'var(--surface)' : '', color: activeTab !== 'store' ? 'var(--text-main)' : '' }}
+        >
+          <ShoppingBag size={18} /> Store
         </button>
       </div>
 
@@ -103,6 +111,7 @@ const Dashboard = ({ hostelInfo }) => {
 
       {activeTab === 'events' && <Events />}
       {activeTab === 'chat' && <Chatbot />}
+      {activeTab === 'store' && <Store orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} />}
 
     </div>
   );

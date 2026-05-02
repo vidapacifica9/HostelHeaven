@@ -9,6 +9,10 @@ import './index.css';
 function App() {
   const [hostelInfo, setHostelInfo] = useState(null);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  
+  // In-App Purchases State
+  const [orders, setOrders] = useState([]);
+  const [allowRoomDelivery, setAllowRoomDelivery] = useState(true);
 
   return (
     <Router>
@@ -33,7 +37,12 @@ function App() {
           path="/guest/dashboard" 
           element={
             hostelInfo && hasCheckedIn ? (
-              <Dashboard hostelInfo={hostelInfo} />
+              <Dashboard 
+                hostelInfo={hostelInfo} 
+                orders={orders} 
+                setOrders={setOrders} 
+                allowRoomDelivery={allowRoomDelivery} 
+              />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -41,7 +50,17 @@ function App() {
         />
         
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route 
+          path="/admin" 
+          element={
+            <AdminDashboard 
+              orders={orders} 
+              setOrders={setOrders} 
+              allowRoomDelivery={allowRoomDelivery} 
+              setAllowRoomDelivery={setAllowRoomDelivery} 
+            />
+          } 
+        />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />

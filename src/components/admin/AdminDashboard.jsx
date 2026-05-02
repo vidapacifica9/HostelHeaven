@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bed, CalendarPlus, LogOut } from 'lucide-react';
+import { Users, Bed, CalendarPlus, LogOut, ShoppingBag } from 'lucide-react';
 import BedAllocation from './BedAllocation';
 import EventManagement from './EventManagement';
+import OrdersDashboard from './OrdersDashboard';
 
 const checkInsToday = [
   { name: 'Sarah Connor', ref: 'HH-8821', time: '14:00', status: 'Pending' },
@@ -10,7 +11,7 @@ const checkInsToday = [
   { name: 'Mike Ross', ref: 'HH-1122', time: '16:00', status: 'Pending' },
 ];
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDelivery }) => {
   const [activeTab, setActiveTab] = useState('checkins');
   const navigate = useNavigate();
 
@@ -48,6 +49,13 @@ const AdminDashboard = () => {
           style={{ backgroundColor: activeTab !== 'events' ? 'var(--surface)' : '', color: activeTab !== 'events' ? 'var(--text-main)' : '' }}
         >
           <CalendarPlus size={18} /> Events
+        </button>
+        <button 
+          onClick={() => setActiveTab('orders')}
+          className={`btn ${activeTab === 'orders' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'orders' ? 'var(--surface)' : '', color: activeTab !== 'orders' ? 'var(--text-main)' : '' }}
+        >
+          <ShoppingBag size={18} /> Orders
         </button>
       </div>
 
@@ -93,6 +101,7 @@ const AdminDashboard = () => {
 
       {activeTab === 'beds' && <BedAllocation />}
       {activeTab === 'events' && <EventManagement />}
+      {activeTab === 'orders' && <OrdersDashboard orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} setAllowRoomDelivery={setAllowRoomDelivery} />}
 
     </div>
   );
