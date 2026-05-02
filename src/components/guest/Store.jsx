@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Coffee, Beer, ShoppingBag, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Coffee, Beer, ShoppingBag, CheckCircle, Lock, Bath, Clock, Utensils, Box } from 'lucide-react';
 
 const products = [
-  { id: 1, name: 'Local Draft Beer', price: 4.50, icon: <Beer size={32} /> },
-  { id: 2, name: 'Artisan Coffee', price: 3.00, icon: <Coffee size={32} /> },
-  { id: 3, name: 'Burger & Fries', price: 12.00, icon: <ShoppingBag size={32} /> },
-  { id: 4, name: 'Towel Rental', price: 2.00, icon: <ShoppingBag size={32} /> },
-  { id: 5, name: 'Late Checkout', price: 10.00, icon: <ShoppingBag size={32} /> }
+  { id: 1, name: 'Local Draft Beer', price: 4.50, category: 'menu', icon: <Beer size={32} /> },
+  { id: 2, name: 'Artisan Coffee', price: 3.00, category: 'menu', icon: <Coffee size={32} /> },
+  { id: 3, name: 'Burger & Fries', price: 12.00, category: 'menu', icon: <Utensils size={32} /> },
+  { id: 4, name: 'Padlock', price: 5.00, category: 'essentials', icon: <Lock size={32} /> },
+  { id: 5, name: 'Dental Kit', price: 3.50, category: 'essentials', icon: <Bath size={32} /> },
+  { id: 6, name: 'Towel Rental', price: 2.00, category: 'services', icon: <Bath size={32} /> },
+  { id: 7, name: 'Late Checkout', price: 10.00, category: 'services', icon: <Clock size={32} /> }
 ];
 
 const Store = ({ orders, setOrders, allowRoomDelivery }) => {
+  const [activeCategory, setActiveCategory] = useState('menu');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [deliveryMethod, setDeliveryMethod] = useState('pickup');
   const [orderPlaced, setOrderPlaced] = useState(false);
+
+  const filteredProducts = products.filter(p => p.category === activeCategory);
+
+  const handleCategoryChange = (category) => {
+    setActiveCategory(category);
+    setSelectedProduct(null); // Clear selection when switching tabs
+  };
 
   const handleOrder = () => {
     if (!selectedProduct) return;
@@ -44,6 +54,46 @@ const Store = ({ orders, setOrders, allowRoomDelivery }) => {
       </h2>
       <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Order essentials directly to your tab.</p>
       
+      {/* Sub-navigation Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border)' }}>
+        <button 
+          onClick={() => handleCategoryChange('menu')}
+          className="btn"
+          style={{ 
+            padding: '0.5rem 1rem', 
+            backgroundColor: activeCategory === 'menu' ? 'var(--primary)' : 'transparent', 
+            color: activeCategory === 'menu' ? 'white' : 'var(--text-main)',
+            border: activeCategory === 'menu' ? 'none' : '1px solid var(--border)'
+          }}
+        >
+          <Utensils size={16} /> Menu
+        </button>
+        <button 
+          onClick={() => handleCategoryChange('essentials')}
+          className="btn"
+          style={{ 
+            padding: '0.5rem 1rem', 
+            backgroundColor: activeCategory === 'essentials' ? 'var(--primary)' : 'transparent', 
+            color: activeCategory === 'essentials' ? 'white' : 'var(--text-main)',
+            border: activeCategory === 'essentials' ? 'none' : '1px solid var(--border)'
+          }}
+        >
+          <Box size={16} /> Essentials
+        </button>
+        <button 
+          onClick={() => handleCategoryChange('services')}
+          className="btn"
+          style={{ 
+            padding: '0.5rem 1rem', 
+            backgroundColor: activeCategory === 'services' ? 'var(--primary)' : 'transparent', 
+            color: activeCategory === 'services' ? 'white' : 'var(--text-main)',
+            border: activeCategory === 'services' ? 'none' : '1px solid var(--border)'
+          }}
+        >
+          <Clock size={16} /> Services
+        </button>
+      </div>
+
       {orderPlaced ? (
         <div style={{ backgroundColor: 'var(--secondary)', color: 'white', padding: '2rem', borderRadius: 'var(--radius-md)', textAlign: 'center', marginBottom: '1.5rem' }}>
           <CheckCircle size={48} style={{ margin: '0 auto 1rem' }} />
@@ -53,7 +103,7 @@ const Store = ({ orders, setOrders, allowRoomDelivery }) => {
       ) : (
         <>
           <div className="grid-2" style={{ marginBottom: '2rem' }}>
-            {products.map(p => (
+            {filteredProducts.map(p => (
               <div 
                 key={p.id} 
                 onClick={() => setSelectedProduct(p)}
@@ -96,7 +146,7 @@ const Store = ({ orders, setOrders, allowRoomDelivery }) => {
                       onChange={() => setDeliveryMethod('pickup')}
                       style={{ accentColor: 'var(--primary)' }}
                     />
-                    Pick up at Bar
+                    Pick up at Bar / Reception
                   </label>
                   
                   {allowRoomDelivery && (
