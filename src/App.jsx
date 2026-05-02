@@ -14,6 +14,15 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [allowRoomDelivery, setAllowRoomDelivery] = useState(true);
 
+  // Community State
+  const [communityOptIn, setCommunityOptIn] = useState(false);
+  const [userStatus, setUserStatus] = useState('');
+  const [lobbyMessages, setLobbyMessages] = useState([
+    { id: 1, sender: 'Sarah', text: 'Hey everyone! Anyone heading to the beach today?', time: '10:30 AM', isMine: false },
+    { id: 2, sender: 'Mike', text: 'I am! Leaving in about 20 mins if you want to join.', time: '10:32 AM', isMine: false },
+    { id: 3, sender: 'Emma', text: 'Count me in too! 🌊', time: '10:35 AM', isMine: false }
+  ]);
+
   return (
     <Router>
       <Routes>
@@ -42,6 +51,12 @@ function App() {
                 orders={orders} 
                 setOrders={setOrders} 
                 allowRoomDelivery={allowRoomDelivery} 
+                communityOptIn={communityOptIn}
+                setCommunityOptIn={setCommunityOptIn}
+                userStatus={userStatus}
+                setUserStatus={setUserStatus}
+                lobbyMessages={lobbyMessages}
+                setLobbyMessages={setLobbyMessages}
               />
             ) : (
               <Navigate to="/login" replace />

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag } from 'lucide-react';
+import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag, Users } from 'lucide-react';
 import Events from './Events';
 import Chatbot from './Chatbot';
 import Store from './Store';
+import Community from './Community';
 
-const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery }) => {
+const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery, communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
 
@@ -40,6 +41,13 @@ const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery }) => {
           style={{ backgroundColor: activeTab !== 'events' ? 'var(--surface)' : '', color: activeTab !== 'events' ? 'var(--text-main)' : '' }}
         >
           <Map size={18} /> Events
+        </button>
+        <button 
+          onClick={() => setActiveTab('community')}
+          className={`btn ${activeTab === 'community' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'community' ? 'var(--surface)' : '', color: activeTab !== 'community' ? 'var(--text-main)' : '' }}
+        >
+          <Users size={18} /> Community
         </button>
         <button 
           onClick={() => setActiveTab('chat')}
@@ -110,6 +118,7 @@ const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery }) => {
       )}
 
       {activeTab === 'events' && <Events />}
+      {activeTab === 'community' && <Community communityOptIn={communityOptIn} setCommunityOptIn={setCommunityOptIn} userStatus={userStatus} setUserStatus={setUserStatus} lobbyMessages={lobbyMessages} setLobbyMessages={setLobbyMessages} />}
       {activeTab === 'chat' && <Chatbot />}
       {activeTab === 'store' && <Store orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} />}
 
