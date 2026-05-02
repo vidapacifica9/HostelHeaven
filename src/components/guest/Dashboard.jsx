@@ -53,7 +53,7 @@ const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery }) => {
           className={`btn ${activeTab === 'store' ? 'btn-primary' : ''}`}
           style={{ backgroundColor: activeTab !== 'store' ? 'var(--surface)' : '', color: activeTab !== 'store' ? 'var(--text-main)' : '' }}
         >
-          <ShoppingBag size={18} /> Store
+          <ShoppingBag size={18} /> Order
         </button>
       </div>
 

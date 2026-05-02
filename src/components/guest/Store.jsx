@@ -40,9 +40,9 @@ const Store = ({ orders, setOrders, allowRoomDelivery }) => {
   return (
     <div className="glass-panel" style={{ marginTop: '1rem' }}>
       <h2 className="heading-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <ShoppingCart size={24} color="var(--primary)" /> Digital Bar & Store
+        <ShoppingCart size={24} color="var(--primary)" /> Order Items
       </h2>
-      <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Order items directly to your tab.</p>
+      <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Order essentials directly to your tab.</p>
       
       {orderPlaced ? (
         <div style={{ backgroundColor: 'var(--secondary)', color: 'white', padding: '2rem', borderRadius: 'var(--radius-md)', textAlign: 'center', marginBottom: '1.5rem' }}>
