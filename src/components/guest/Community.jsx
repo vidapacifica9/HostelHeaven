@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, Eye, Coffee, MapPin, Beer, Utensils, MessageCircle, Send } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 
 const mockCommunity = [
   { id: 1, name: 'Sarah', status: 'Up for drinks', icon: <Beer size={16} /> },
@@ -15,10 +16,62 @@ const statusOptions = [
   { label: 'Just chilling', icon: <Coffee size={16} /> }
 ];
 
-const Community = ({ communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
+const Community = ({ hostelInfo, bookingInfo, communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
   const [activeTab, setActiveTab] = useState('board');
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef(null);
+
+  // Fetch initial messages and set up real-time subscription
+  useEffect(() => {
+    if (!hostelInfo?.id) return;
+
+    const fetchMessages = async () => {
+      const { data, error } = await supabase
+        .from('lobby_messages')
+        .select('*')
+        .eq('hostel_id', hostelInfo.id)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true });
+
+      if (data) {
+        setLobbyMessages(data);
+      }
+    };
+
+    fetchMessages();
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('public:lobby_messages')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'lobby_messages',
+        filter: `hostel_id=eq.${hostelInfo.id}`
+      }, payload => {
+        setLobbyMessages(current => {
+          // Prevent duplicates
+          if (current.find(m => m.id === payload.new.id)) return current;
+          return [...current, payload.new];
+        });
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'lobby_messages',
+        filter: `hostel_id=eq.${hostelInfo.id}`
+      }, payload => {
+        // Handle message deletion (moderation)
+        if (payload.new.is_deleted) {
+          setLobbyMessages(current => current.filter(m => m.id !== payload.new.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [hostelInfo, setLobbyMessages]);
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
@@ -27,22 +80,43 @@ const Community = ({ communityOptIn, setCommunityOptIn, userStatus, setUserStatu
     }
   }, [lobbyMessages, activeTab]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !bookingInfo) return;
+    
+    if (bookingInfo.is_banned) {
+      alert("You have been blocked from sending messages by the admin.");
+      setNewMessage('');
+      return;
+    }
 
-    const newMsg = {
-      id: Date.now(),
-      sender: 'Alex (You)',
-      text: newMessage,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isMine: true
-    };
-
-    setLobbyMessages([...lobbyMessages, newMsg]);
+    const textToSend = newMessage;
     setNewMessage('');
+
+    const { error } = await supabase
+      .from('lobby_messages')
+      .insert([
+        { 
+          hostel_id: hostelInfo.id,
+          booking_id: bookingInfo.id,
+          sender_name: bookingInfo.guest_name,
+          text: textToSend
+        }
+      ]);
+
+    if (error) {
+      console.error('Error sending message:', error);
+      // Revert optimism if failed
+      alert("Failed to send message.");
+    }
   };
   
+  // Format time helper
+  const formatTime = (dateString) => {
+    const d = new Date(dateString);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   if (!communityOptIn) {
     return (
       <div className="glass-panel" style={{ marginTop: '1rem', textAlign: 'center', padding: '3rem 1.5rem' }}>
@@ -134,12 +208,12 @@ const Community = ({ communityOptIn, setCommunityOptIn, userStatus, setUserStatu
           <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Other Guests Here</h3>
           <div className="grid-2">
             {/* Render Current User First if they have a status */}
-            {userStatus && (
+            {userStatus && bookingInfo && (
                <div style={{ padding: '1rem', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--primary)' }}>
                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                    <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem' }}>A</div>
-                     Alex (You)
+                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem' }}>{bookingInfo.guest_name.charAt(0)}</div>
+                     {bookingInfo.guest_name.split(' ')[0]} (You)
                    </span>
                  </div>
                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.875rem', fontWeight: 500 }}>
@@ -174,26 +248,29 @@ const Community = ({ communityOptIn, setCommunityOptIn, userStatus, setUserStatu
               <p className="text-muted" style={{ textAlign: 'center', marginTop: '2rem' }}>Be the first to say hi! 👋</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {lobbyMessages.map(msg => (
-                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.isMine ? 'flex-end' : 'flex-start' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', padding: '0 0.25rem' }}>
-                      {msg.sender} • {msg.time}
-                    </span>
-                    <div style={{ 
-                      backgroundColor: msg.isMine ? 'var(--primary)' : 'var(--surface)',
-                      color: msg.isMine ? 'white' : 'var(--text-main)',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '1rem',
-                      borderBottomRightRadius: msg.isMine ? '0' : '1rem',
-                      borderBottomLeftRadius: msg.isMine ? '1rem' : '0',
-                      maxWidth: '85%',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      border: msg.isMine ? 'none' : '1px solid var(--border)'
-                    }}>
-                      {msg.text}
+                {lobbyMessages.map(msg => {
+                  const isMine = bookingInfo && msg.booking_id === bookingInfo.id;
+                  return (
+                    <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', padding: '0 0.25rem' }}>
+                        {msg.sender_name} • {formatTime(msg.created_at)}
+                      </span>
+                      <div style={{ 
+                        backgroundColor: isMine ? 'var(--primary)' : 'var(--surface)',
+                        color: isMine ? 'white' : 'var(--text-main)',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '1rem',
+                        borderBottomRightRadius: isMine ? '0' : '1rem',
+                        borderBottomLeftRadius: isMine ? '1rem' : '0',
+                        maxWidth: '85%',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                        border: isMine ? 'none' : '1px solid var(--border)'
+                      }}>
+                        {msg.text}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={chatEndRef} />
               </div>
             )}
@@ -203,13 +280,14 @@ const Community = ({ communityOptIn, setCommunityOptIn, userStatus, setUserStatu
           <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
             <input 
               type="text" 
-              placeholder="Message the lobby..." 
+              placeholder={bookingInfo?.is_banned ? "You are banned from chat." : "Message the lobby..."} 
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               className="input-field"
+              disabled={bookingInfo?.is_banned}
               style={{ flexGrow: 1, marginBottom: 0 }}
             />
-            <button type="submit" className="btn btn-primary" disabled={!newMessage.trim()} style={{ padding: '0 1.25rem' }}>
+            <button type="submit" className="btn btn-primary" disabled={!newMessage.trim() || bookingInfo?.is_banned} style={{ padding: '0 1.25rem' }}>
               <Send size={18} />
             </button>
           </form>

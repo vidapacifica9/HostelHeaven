@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Compass } from 'lucide-react';
+import { Compass, Loader } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 
-const mockHostels = {
-  'HH': { name: 'HostelHeaven', city: 'Barcelona', primary: '#4F46E5', secondary: '#10B981' },
-  'UN': { name: 'Urban Nomad', city: 'Berlin', primary: '#F97316', secondary: '#EAB308' },
-  'WL': { name: 'WanderLust', city: 'Bali', primary: '#06B6D4', secondary: '#3B82F6' },
-};
-
-const Login = ({ setHostelInfo }) => {
+const Login = ({ setHostelInfo, setBookingInfo, setHasCheckedIn }) => {
   const [ref, setRef] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   // Reset theme on mount
@@ -19,21 +15,58 @@ const Login = ({ setHostelInfo }) => {
     document.documentElement.style.setProperty('--secondary', '#10B981');
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const prefix = ref.substring(0, 2).toUpperCase();
-    
-    if (mockHostels[prefix]) {
-      const hostel = mockHostels[prefix];
-      
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const formattedRef = ref.trim().toUpperCase();
+
+      // Query the bookings table and join with hostels table
+      const { data: booking, error: dbError } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          hostels (*)
+        `)
+        .eq('booking_ref', formattedRef)
+        .single();
+
+      if (dbError || !booking) {
+        throw new Error('Invalid booking reference. Please check your confirmation email.');
+      }
+
+      if (booking.is_banned) {
+        throw new Error('This booking reference has been suspended by the administration.');
+      }
+
+      if (!booking.hostels) {
+        throw new Error('Hostel configuration missing.');
+      }
+
+      const hostel = booking.hostels;
+
       // Dynamically apply branding
-      document.documentElement.style.setProperty('--primary', hostel.primary);
-      document.documentElement.style.setProperty('--secondary', hostel.secondary);
+      document.documentElement.style.setProperty('--primary', hostel.primary_color);
+      // For MVP, we'll auto-generate a secondary color or use a default
+      document.documentElement.style.setProperty('--secondary', '#10B981');
       
       setHostelInfo(hostel);
-      navigate('/guest/checkin');
-    } else {
-      setError('Invalid booking reference. Try prefix HH-, UN-, or WL-');
+      setBookingInfo(booking);
+
+      if (booking.status === 'Checked-in') {
+        setHasCheckedIn(true);
+        navigate('/guest/dashboard');
+      } else {
+        navigate('/guest/checkin');
+      }
+
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to connect to the server.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -54,15 +87,16 @@ const Login = ({ setHostelInfo }) => {
             <input 
               type="text" 
               className="input-field" 
-              placeholder="e.g. HH-98234 or UN-123"
+              placeholder="e.g. HH-1234"
               value={ref}
               onChange={(e) => setRef(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           {error && <p style={{ color: '#FCA5A5', fontSize: '0.875rem', marginTop: '-0.5rem', marginBottom: '1rem' }}>{error}</p>}
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', backgroundColor: 'white', color: 'var(--primary)', transition: 'color 0.5s ease' }}>
-            Check In
+          <button type="submit" className="btn btn-primary" disabled={isLoading} style={{ width: '100%', marginTop: '0.5rem', backgroundColor: 'white', color: 'var(--primary)', transition: 'color 0.5s ease', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+            {isLoading ? <Loader size={18} className="spin" /> : 'Check In'}
           </button>
         </form>
 
@@ -70,6 +104,12 @@ const Login = ({ setHostelInfo }) => {
           <p>Are you staff? <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/admin')}>Admin Login</span></p>
         </div>
       </div>
+      
+      {/* Basic spinner CSS */}
+      <style>{`
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };

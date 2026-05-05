@@ -6,7 +6,7 @@ import Chatbot from './Chatbot';
 import Store from './Store';
 import Community from './Community';
 
-const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery, communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
+const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelivery, communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
 
@@ -117,8 +117,8 @@ const Dashboard = ({ hostelInfo, orders, setOrders, allowRoomDelivery, community
         </div>
       )}
 
-      {activeTab === 'events' && <Events />}
-      {activeTab === 'community' && <Community communityOptIn={communityOptIn} setCommunityOptIn={setCommunityOptIn} userStatus={userStatus} setUserStatus={setUserStatus} lobbyMessages={lobbyMessages} setLobbyMessages={setLobbyMessages} />}
+      {activeTab === 'events' && <Events bookingInfo={bookingInfo} hostelInfo={hostelInfo} />}
+      {activeTab === 'community' && <Community hostelInfo={hostelInfo} bookingInfo={bookingInfo} communityOptIn={communityOptIn} setCommunityOptIn={setCommunityOptIn} userStatus={userStatus} setUserStatus={setUserStatus} lobbyMessages={lobbyMessages} setLobbyMessages={setLobbyMessages} />}
       {activeTab === 'chat' && <Chatbot />}
       {activeTab === 'store' && <Store orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} />}
 

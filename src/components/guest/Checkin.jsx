@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, FileSignature, CheckCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 
-const Checkin = ({ hostelInfo, setHasCheckedIn }) => {
+const Checkin = ({ hostelInfo, bookingInfo, setHasCheckedIn }) => {
   const [idUploaded, setIdUploaded] = useState(false);
   const [rulesSigned, setRulesSigned] = useState(false);
   const navigate = useNavigate();
 
-  const handleComplete = () => {
-    if (idUploaded && rulesSigned) {
-      setHasCheckedIn(true);
-      navigate('/guest/dashboard');
+  const handleComplete = async () => {
+    if (idUploaded && rulesSigned && bookingInfo) {
+      // Update status in database
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'Checked-in' })
+        .eq('id', bookingInfo.id);
+
+      if (!error) {
+        setHasCheckedIn(true);
+        navigate('/guest/dashboard');
+      } else {
+        alert('Check-in failed: ' + error.message);
+      }
     }
   };
 
