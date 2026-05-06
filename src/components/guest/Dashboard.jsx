@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag, Users } from 'lucide-react';
+import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag, Users, Compass } from 'lucide-react';
 import Events from './Events';
 import Chatbot from './Chatbot';
 import Store from './Store';
 import Community from './Community';
+import LocalRecommendations from './LocalRecommendations';
 
 const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelivery, communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -62,6 +63,13 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
           style={{ backgroundColor: activeTab !== 'store' ? 'var(--surface)' : '', color: activeTab !== 'store' ? 'var(--text-main)' : '' }}
         >
           <ShoppingBag size={18} /> Order
+        </button>
+        <button 
+          onClick={() => setActiveTab('explore')}
+          className={`btn ${activeTab === 'explore' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'explore' ? 'var(--surface)' : '', color: activeTab !== 'explore' ? 'var(--text-main)' : '' }}
+        >
+          <Compass size={18} /> Explore
         </button>
       </div>
 
@@ -121,6 +129,7 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
       {activeTab === 'community' && <Community hostelInfo={hostelInfo} bookingInfo={bookingInfo} communityOptIn={communityOptIn} setCommunityOptIn={setCommunityOptIn} userStatus={userStatus} setUserStatus={setUserStatus} lobbyMessages={lobbyMessages} setLobbyMessages={setLobbyMessages} />}
       {activeTab === 'chat' && <Chatbot />}
       {activeTab === 'store' && <Store orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} />}
+      {activeTab === 'explore' && <LocalRecommendations hostelInfo={hostelInfo} />}
 
     </div>
   );

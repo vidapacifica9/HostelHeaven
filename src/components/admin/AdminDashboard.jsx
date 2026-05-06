@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield } from 'lucide-react';
+import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass } from 'lucide-react';
 import BedAllocation from './BedAllocation';
 import EventManagement from './EventManagement';
 import OrdersDashboard from './OrdersDashboard';
 import AdminChatMod from './AdminChatMod';
+import RecommendationManager from './RecommendationManager';
 
 const checkInsToday = [
   { name: 'Sarah Connor', ref: 'HH-8821', time: '14:00', status: 'Pending' },
@@ -65,6 +66,13 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
         >
           <Shield size={18} /> Moderation
         </button>
+        <button 
+          onClick={() => setActiveTab('tips')}
+          className={`btn ${activeTab === 'tips' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'tips' ? 'var(--surface)' : '', color: activeTab !== 'tips' ? 'var(--text-main)' : '' }}
+        >
+          <Compass size={18} /> Local Tips
+        </button>
       </div>
 
       {/* Check-ins View */}
@@ -111,6 +119,7 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
       {activeTab === 'events' && <EventManagement />}
       {activeTab === 'orders' && <OrdersDashboard orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} setAllowRoomDelivery={setAllowRoomDelivery} />}
       {activeTab === 'mod' && <AdminChatMod />}
+      {activeTab === 'tips' && <RecommendationManager />}
 
     </div>
   );
