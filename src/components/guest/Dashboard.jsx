@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag, Users, Compass } from 'lucide-react';
+import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag, Users, Compass, Megaphone } from 'lucide-react';
 import Events from './Events';
 import Chatbot from './Chatbot';
 import Store from './Store';
@@ -13,7 +13,31 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
   const [activeTab, setActiveTab] = useState('overview');
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportDetails, setReportDetails] = useState({ title: '', description: '' });
+  const [currentBroadcast, setCurrentBroadcast] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (hostelInfo?.id) {
+      // Listen for hostel changes (broadcasts)
+      const channel = supabase
+        .channel(`hostel_broadcast_${hostelInfo.id}`)
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'hostels',
+          filter: `id=eq.${hostelInfo.id}` 
+        }, (payload) => {
+          if (payload.new.broadcast_message) {
+            setCurrentBroadcast(payload.new.broadcast_message);
+            // Clear broadcast after 10 seconds
+            setTimeout(() => setCurrentBroadcast(''), 10000);
+          }
+        })
+        .subscribe();
+
+      return () => supabase.removeChannel(channel);
+    }
+  }, [hostelInfo]);
 
   const handleLogout = () => {
     navigate('/login');
@@ -41,6 +65,24 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
 
   return (
     <div className="container" style={{ paddingBottom: '5rem' }}>
+      {/* Global Broadcast Alert */}
+      {currentBroadcast && (
+        <div style={{ 
+          backgroundColor: 'var(--primary)', 
+          color: 'white', 
+          padding: '1rem', 
+          borderRadius: 'var(--radius-sm)', 
+          marginBottom: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          <Megaphone size={20} />
+          <p style={{ fontWeight: 600 }}>{currentBroadcast}</p>
+        </div>
+      )}
+
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', marginTop: '1rem' }}>
         <div>
           <h1 className="heading-1" style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>Welcome, Alex!</h1>

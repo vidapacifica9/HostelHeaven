@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass, ClipboardList, LogIn } from 'lucide-react';
+import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass, ClipboardList, LogIn, Home } from 'lucide-react';
 import BedAllocation from './BedAllocation';
 import EventManagement from './EventManagement';
 import OrdersDashboard from './OrdersDashboard';
 import AdminChatMod from './AdminChatMod';
 import RecommendationManager from './RecommendationManager';
 import StaffHub from './StaffHub';
+import AdminOverview from './AdminOverview';
 import ThemeToggle from '../ThemeToggle';
 import { supabase } from '../../lib/supabaseClient';
 
 const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDelivery }) => {
-  const [activeTab, setActiveTab] = useState('checkins');
+  const [activeTab, setActiveTab] = useState('overview');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -73,6 +74,13 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
 
       {/* Navigation Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+        <button 
+          onClick={() => setActiveTab('overview')}
+          className={`btn ${activeTab === 'overview' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'overview' ? 'var(--surface)' : '', color: activeTab !== 'overview' ? 'var(--text-main)' : '' }}
+        >
+          <Home size={18} /> Overview
+        </button>
         <button 
           onClick={() => setActiveTab('checkins')}
           className={`btn ${activeTab === 'checkins' ? 'btn-primary' : ''}`}
@@ -175,6 +183,7 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
         </div>
       )}
 
+      {activeTab === 'overview' && <AdminOverview />}
       {activeTab === 'beds' && <BedAllocation />}
       {activeTab === 'events' && <EventManagement />}
       {activeTab === 'orders' && <OrdersDashboard orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} setAllowRoomDelivery={setAllowRoomDelivery} />}
