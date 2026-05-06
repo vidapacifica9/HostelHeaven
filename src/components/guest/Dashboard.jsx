@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Key, Wifi, LogOut, Info, Map, MessageSquare, ShoppingBag, Users, Compass, Megaphone } from 'lucide-react';
 import Events from './Events';

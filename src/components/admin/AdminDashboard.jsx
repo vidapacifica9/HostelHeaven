@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass, ClipboardList, LogIn, Home } from 'lucide-react';
+import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass, ClipboardList, LogIn, Home, Crown, Star, Info } from 'lucide-react';
 import BedAllocation from './BedAllocation';
 import EventManagement from './EventManagement';
 import OrdersDashboard from './OrdersDashboard';
@@ -8,12 +8,15 @@ import AdminChatMod from './AdminChatMod';
 import RecommendationManager from './RecommendationManager';
 import StaffHub from './StaffHub';
 import AdminOverview from './AdminOverview';
+import GuestProfileModal from './GuestProfileModal';
 import ThemeToggle from '../ThemeToggle';
 import { supabase } from '../../lib/supabaseClient';
 
 const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDelivery }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [bookings, setBookings] = useState([]);
+  const [allBookings, setAllBookings] = useState([]);
+  const [selectedGuest, setSelectedGuest] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -27,11 +30,28 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
       .from('bookings')
       .select('*')
       .order('created_at', { ascending: false });
-    if (data) setBookings(data);
+    if (data) {
+        setBookings(data);
+        setAllBookings(data);
+    }
     setLoading(false);
   };
 
+  const getGuestLoyalty = (email) => {
+    if (!email) return { label: 'New', color: 'var(--secondary)', icon: null };
+    const count = allBookings.filter(b => b.guest_email === email).length;
+    if (count >= 5) return { label: 'VIP', color: '#F59E0B', icon: <Crown size={14} /> };
+    if (count >= 2) return { label: 'Returning', color: '#3B82F6', icon: <Star size={14} /> };
+    return { label: 'New', color: 'var(--secondary)', icon: null };
+  };
+
   const handleUpdateStatus = async (booking, newStatus) => {
+    const loyalty = getGuestLoyalty(booking.guest_email);
+    
+    if (newStatus === 'Checked-in' && (loyalty.label === 'Returning' || loyalty.label === 'VIP')) {
+      alert(`🌟 LOYALTY ALERT: ${booking.guest_name} is a ${loyalty.label} guest! \n\nAction: Offer a free welcome drink or room upgrade if available.`);
+    }
+
     const { error } = await supabase
       .from('bookings')
       .update({ status: newStatus })
@@ -152,6 +172,25 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <h3 style={{ fontWeight: 600 }}>{booking.guest_name}</h3>
+                    {(() => {
+                      const loyalty = getGuestLoyalty(booking.guest_email);
+                      return (
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          fontWeight: 800, 
+                          color: 'white', 
+                          backgroundColor: loyalty.color, 
+                          padding: '0.1rem 0.4rem', 
+                          borderRadius: '0.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          textTransform: 'uppercase'
+                        }}>
+                          {loyalty.icon} {loyalty.label}
+                        </span>
+                      );
+                    })()}
                     <span style={{ 
                       fontSize: '0.75rem', 
                       padding: '0.1rem 0.5rem', 
@@ -166,6 +205,9 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
                   <p className="text-muted" style={{ fontSize: '0.875rem' }}>Ref: {booking.booking_ref} | Room: {booking.room_number}-{booking.bed_number}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => setSelectedGuest(booking)} className="btn" style={{ padding: '0.4rem', color: 'var(--text-muted)' }}>
+                    <Info size={18} />
+                  </button>
                   {booking.status === 'Pending' && (
                     <button onClick={() => handleUpdateStatus(booking, 'Checked-in')} className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.875rem' }}>
                       Check In
@@ -181,6 +223,14 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
             ))}
           </div>
         </div>
+      )}
+
+      {selectedGuest && (
+        <GuestProfileModal 
+          guest={selectedGuest} 
+          allBookings={allBookings} 
+          onClose={() => setSelectedGuest(null)} 
+        />
       )}
 
       {activeTab === 'overview' && <AdminOverview />}
