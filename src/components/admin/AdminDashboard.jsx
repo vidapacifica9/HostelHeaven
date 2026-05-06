@@ -1,21 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass } from 'lucide-react';
+import { Users, Bed, CalendarPlus, LogOut, ShoppingBag, Shield, Compass, ClipboardList, LogIn } from 'lucide-react';
 import BedAllocation from './BedAllocation';
 import EventManagement from './EventManagement';
 import OrdersDashboard from './OrdersDashboard';
 import AdminChatMod from './AdminChatMod';
 import RecommendationManager from './RecommendationManager';
-
-const checkInsToday = [
-  { name: 'Sarah Connor', ref: 'HH-8821', time: '14:00', status: 'Pending' },
-  { name: 'John Doe', ref: 'HH-98234', time: '15:30', status: 'Checked In' },
-  { name: 'Mike Ross', ref: 'HH-1122', time: '16:00', status: 'Pending' },
-];
+import StaffHub from './StaffHub';
+import ThemeToggle from '../ThemeToggle';
+import { supabase } from '../../lib/supabaseClient';
 
 const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDelivery }) => {
   const [activeTab, setActiveTab] = useState('checkins');
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data) setBookings(data);
+    setLoading(false);
+  };
+
+  const handleUpdateStatus = async (booking, newStatus) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: newStatus })
+      .eq('id', booking.id);
+
+    if (!error) {
+      // Automate cleaning task if checking out
+      if (newStatus === 'Checked-out') {
+        const { data: hostel } = await supabase.from('hostels').select('id').eq('prefix', 'HH').single();
+        await supabase.from('staff_tasks').insert([{
+          hostel_id: hostel?.id,
+          title: `Clean Bed ${booking.room_number}-${booking.bed_number}`,
+          description: `Guest ${booking.guest_name} just checked out.`,
+          category: 'Cleaning',
+          status: 'Pending'
+        }]);
+      }
+      fetchBookings();
+    }
+  };
+
+  const handleLogout = () => {
+    navigate('/login');
+  };
 
   return (
     <div className="container" style={{ paddingBottom: '5rem' }}>
@@ -24,9 +63,12 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
           <h1 className="heading-1" style={{ fontSize: '1.5rem', marginBottom: '0.25rem', color: 'var(--primary)' }}>Staff Portal</h1>
           <p className="text-muted">HostelHeaven, Barcelona</p>
         </div>
-        <button onClick={() => navigate('/login')} className="btn" style={{ padding: '0.5rem', backgroundColor: 'transparent', color: 'var(--text-muted)' }}>
-          <LogOut size={24} />
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <ThemeToggle />
+          <button onClick={handleLogout} className="btn" style={{ padding: '0.5rem', backgroundColor: 'transparent', color: 'var(--text-muted)' }}>
+            <LogOut size={24} />
+          </button>
+        </div>
       </header>
 
       {/* Navigation Tabs */}
@@ -73,17 +115,24 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
         >
           <Compass size={18} /> Local Tips
         </button>
+        <button 
+          onClick={() => setActiveTab('staff')}
+          className={`btn ${activeTab === 'staff' ? 'btn-primary' : ''}`}
+          style={{ backgroundColor: activeTab !== 'staff' ? 'var(--surface)' : '', color: activeTab !== 'staff' ? 'var(--text-main)' : '' }}
+        >
+          <ClipboardList size={18} /> Staff Hub
+        </button>
       </div>
 
       {/* Check-ins View */}
       {activeTab === 'checkins' && (
         <div className="glass-panel" style={{ marginTop: '1rem' }}>
-          <h2 className="heading-2">Today's Arrivals</h2>
-          <p className="text-muted" style={{ marginBottom: '1.5rem' }}>3 guests arriving today.</p>
+          <h2 className="heading-2">Arrivals & Departures</h2>
+          <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Manage guest status.</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {checkInsToday.map((guest, idx) => (
-              <div key={idx} style={{ 
+            {loading ? <p>Loading bookings...</p> : bookings.map((booking) => (
+              <div key={booking.id} style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center', 
@@ -93,21 +142,32 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
                 backgroundColor: 'var(--surface)'
               }}>
                 <div>
-                  <h3 style={{ fontWeight: 600 }}>{guest.name}</h3>
-                  <p className="text-muted" style={{ fontSize: '0.875rem' }}>Ref: {guest.ref} • ETA: {guest.time}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h3 style={{ fontWeight: 600 }}>{booking.guest_name}</h3>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      padding: '0.1rem 0.5rem', 
+                      borderRadius: '1rem', 
+                      backgroundColor: booking.status === 'Checked-in' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                      color: booking.status === 'Checked-in' ? 'var(--secondary)' : 'var(--text-muted)',
+                      fontWeight: 600
+                    }}>
+                      {booking.status}
+                    </span>
+                  </div>
+                  <p className="text-muted" style={{ fontSize: '0.875rem' }}>Ref: {booking.booking_ref} | Room: {booking.room_number}-{booking.bed_number}</p>
                 </div>
-                <div>
-                  <span style={{ 
-                    backgroundColor: guest.status === 'Checked In' ? 'var(--secondary)' : 'var(--surface-hover)', 
-                    color: guest.status === 'Checked In' ? 'white' : 'var(--text-muted)',
-                    border: guest.status === 'Checked In' ? 'none' : '1px solid var(--border)',
-                    padding: '0.25rem 0.75rem', 
-                    borderRadius: '1rem', 
-                    fontSize: '0.75rem',
-                    fontWeight: 600
-                  }}>
-                    {guest.status}
-                  </span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {booking.status === 'Pending' && (
+                    <button onClick={() => handleUpdateStatus(booking, 'Checked-in')} className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.875rem' }}>
+                      Check In
+                    </button>
+                  )}
+                  {booking.status === 'Checked-in' && (
+                    <button onClick={() => handleUpdateStatus(booking, 'Checked-out')} className="btn" style={{ padding: '0.4rem 1rem', fontSize: '0.875rem', border: '1px solid #EF4444', color: '#EF4444' }}>
+                      Check Out
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -120,6 +180,7 @@ const AdminDashboard = ({ orders, setOrders, allowRoomDelivery, setAllowRoomDeli
       {activeTab === 'orders' && <OrdersDashboard orders={orders} setOrders={setOrders} allowRoomDelivery={allowRoomDelivery} setAllowRoomDelivery={setAllowRoomDelivery} />}
       {activeTab === 'mod' && <AdminChatMod />}
       {activeTab === 'tips' && <RecommendationManager />}
+      {activeTab === 'staff' && <StaffHub />}
 
     </div>
   );

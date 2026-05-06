@@ -6,13 +6,37 @@ import Chatbot from './Chatbot';
 import Store from './Store';
 import Community from './Community';
 import LocalRecommendations from './LocalRecommendations';
+import ThemeToggle from '../ThemeToggle';
+import { supabase } from '../../lib/supabaseClient';
 
 const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelivery, communityOptIn, setCommunityOptIn, userStatus, setUserStatus, lobbyMessages, setLobbyMessages }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportDetails, setReportDetails] = useState({ title: '', description: '' });
   const navigate = useNavigate();
 
   const handleLogout = () => {
     navigate('/login');
+  };
+
+  const handleReportIssue = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase
+      .from('staff_tasks')
+      .insert([{
+        hostel_id: hostelInfo.id,
+        booking_id: bookingInfo.id,
+        title: reportDetails.title,
+        description: `${bookingInfo.guest_name} (Room ${bookingInfo.room_number}-${bookingInfo.bed_number}): ${reportDetails.description}`,
+        category: 'Guest Request',
+        status: 'Pending'
+      }]);
+
+    if (!error) {
+      alert('Issue reported to staff. They will handle it soon!');
+      setShowReportForm(false);
+      setReportDetails({ title: '', description: '' });
+    }
   };
 
   return (
@@ -22,9 +46,12 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
           <h1 className="heading-1" style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>Welcome, Alex!</h1>
           <p className="text-muted">{hostelInfo?.name || 'HostelHeaven'}, {hostelInfo?.city || 'Barcelona'}</p>
         </div>
-        <button onClick={handleLogout} className="btn" style={{ padding: '0.5rem', backgroundColor: 'transparent', color: 'var(--text-muted)' }}>
-          <LogOut size={24} />
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <ThemeToggle />
+          <button onClick={handleLogout} className="btn" style={{ padding: '0.5rem', backgroundColor: 'transparent', color: 'var(--text-muted)' }}>
+            <LogOut size={24} />
+          </button>
+        </div>
       </header>
 
       {/* Navigation Tabs */}
@@ -119,9 +146,48 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
             <h3 className="heading-2" style={{ fontSize: '1.25rem' }}>Quick Actions</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               <button className="btn" style={{ width: '100%', backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}>Extend Stay</button>
-              <button className="btn" style={{ width: '100%', backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}>Report Issue</button>
+              <button 
+                onClick={() => setShowReportForm(!showReportForm)} 
+                className="btn" 
+                style={{ width: '100%', backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px solid #EF4444', color: '#EF4444' }}
+              >
+                Report Issue
+              </button>
             </div>
           </div>
+
+          {/* Report Issue Form */}
+          {showReportForm && (
+            <div className="glass-panel" style={{ gridColumn: 'span 2', backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px solid #EF4444' }}>
+              <h2 className="heading-2" style={{ color: '#EF4444', fontSize: '1.1rem' }}>Report a Maintenance Issue</h2>
+              <form onSubmit={handleReportIssue} style={{ marginTop: '1rem' }}>
+                <div className="input-group">
+                  <label>What's the issue?</label>
+                  <input 
+                    className="input-field" 
+                    placeholder="e.g. Broken AC, Missing towels" 
+                    value={reportDetails.title}
+                    onChange={e => setReportDetails({...reportDetails, title: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="input-group" style={{ marginTop: '0.5rem' }}>
+                  <label>Details</label>
+                  <textarea 
+                    className="input-field" 
+                    placeholder="Brief description of the problem..." 
+                    rows="2"
+                    value={reportDetails.description}
+                    onChange={e => setReportDetails({...reportDetails, description: e.target.value})}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                  <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#EF4444', border: 'none', flex: 1 }}>Submit Report</button>
+                  <button type="button" onClick={() => setShowReportForm(false)} className="btn" style={{ flex: 1 }}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
