@@ -125,7 +125,7 @@ const ManagementInsights = ({ onClose, hostelInfo }) => {
                 );
               })}
             </div>
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(79, 70, 229, 0.05)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--surface-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--primary)', opacity: 0.9 }}>
               <p style={{ fontSize: '0.875rem', color: 'var(--primary)', fontWeight: 600 }}>
                 💡 Tip: Direct bookings save you approx. 15% in commission.
               </p>
@@ -145,11 +145,12 @@ const ManagementInsights = ({ onClose, hostelInfo }) => {
                 <div key={i} style={{ 
                   flex: 1, 
                   height: `${val}%`, 
-                  backgroundColor: val > 80 ? 'var(--primary)' : 'var(--border)',
+                  backgroundColor: val > 80 ? 'var(--primary)' : 'var(--surface-hover)',
                   borderRadius: '2px 2px 0 0',
-                  position: 'relative'
+                  position: 'relative',
+                  border: '1px solid var(--border)'
                 }}>
-                  {val > 80 && <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.6rem', fontWeight: 700 }}>HIGH</span>}
+                  {val > 80 && <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.6rem', fontWeight: 700, color: 'var(--primary)' }}>HIGH</span>}
                 </div>
               ))}
             </div>

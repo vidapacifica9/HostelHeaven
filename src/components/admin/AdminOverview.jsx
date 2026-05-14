@@ -87,7 +87,7 @@ const AdminOverview = () => {
           </div>
           <div style={{ flex: 1 }}>
             <p className="text-muted" style={{ fontSize: '0.875rem' }}>Current Occupancy</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{stats.occupancy} Guests</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{stats.occupancy} Guests</h3>
           </div>
           <ChevronRight size={20} className="text-muted" />
         </button>
@@ -101,7 +101,7 @@ const AdminOverview = () => {
           </div>
           <div style={{ flex: 1 }}>
             <p className="text-muted" style={{ fontSize: '0.875rem' }}>Total Paid Revenue</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>${stats.totalRevenue.toFixed(2)}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>${stats.totalRevenue.toFixed(2)}</h3>
           </div>
           <ChevronRight size={20} className="text-muted" />
         </button>
@@ -109,27 +109,27 @@ const AdminOverview = () => {
 
       <div className="grid-2" style={{ gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem' }}>
-          <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444' }}>
+          <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#F87171' }}>
             <ClipboardList size={24} />
           </div>
           <div>
             <p className="text-muted" style={{ fontSize: '0.875rem' }}>Pending Tasks</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{stats.pendingTasks}</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{stats.pendingTasks}</h3>
           </div>
         </div>
         <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem' }}>
-          <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B' }}>
+          <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24' }}>
             <Activity size={24} />
           </div>
           <div>
             <p className="text-muted" style={{ fontSize: '0.875rem' }}>Arrivals / Departures</p>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{stats.arrivals} In / {stats.departures} Out</h3>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{stats.arrivals} In / {stats.departures} Out</h3>
           </div>
         </div>
       </div>
 
       {/* Broadcast System */}
-      <div className="glass-panel" style={{ marginBottom: '1.5rem', border: '1px solid var(--primary)', backgroundColor: 'rgba(79, 70, 229, 0.02)' }}>
+      <div className="glass-panel" style={{ marginBottom: '1.5rem', border: '1px solid var(--primary)', backgroundColor: 'var(--surface-hover)', opacity: 0.95 }}>
         <h3 className="heading-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem' }}>
           <Megaphone size={20} color="var(--primary)" /> Global Guest Broadcast
         </h3>
@@ -152,19 +152,21 @@ const AdminOverview = () => {
       <div className="glass-panel">
         <h3 className="heading-2" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Operational Pulse</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--surface-hover)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--surface-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: stats.pendingTasks > 5 ? '#EF4444' : 'var(--secondary)' }}></div>
+              <div style={{ width: '100px', height: '10px', backgroundColor: 'var(--border)', borderRadius: '5px', overflow: 'hidden', marginRight: '0.5rem' }}>
+                <div style={{ width: `${Math.min((stats.pendingTasks / 10) * 100, 100)}%`, height: '100%', backgroundColor: stats.pendingTasks > 5 ? '#EF4444' : 'var(--secondary)' }}></div>
+              </div>
               <span style={{ fontWeight: 600 }}>Cleaning Pipeline</span>
             </div>
             <span className="text-muted">{stats.pendingTasks} beds to clean</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--surface-hover)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--surface-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--secondary)' }}></div>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--secondary)', boxShadow: '0 0 8px var(--secondary)' }}></div>
               <span style={{ fontWeight: 600 }}>Guest Satisfaction</span>
             </div>
-            <span className="text-muted">High engagement in Lobby Chat</span>
+            <span className="text-muted">High engagement</span>
           </div>
         </div>
       </div>
