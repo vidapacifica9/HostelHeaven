@@ -13,6 +13,8 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
   const [activeTab, setActiveTab] = useState('overview');
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportDetails, setReportDetails] = useState({ title: '', description: '' });
+  const [showHappyMeter, setShowHappyMeter] = useState(true);
+  const [hasVoted, setHasVoted] = useState(false);
   const [currentBroadcast, setCurrentBroadcast] = useState('');
   const navigate = useNavigate();
 
@@ -60,6 +62,27 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
       alert('Issue reported to staff. They will handle it soon!');
       setShowReportForm(false);
       setReportDetails({ title: '', description: '' });
+    }
+  };
+
+  const handleSatisfactionVote = async (vibe) => {
+    setHasVoted(true);
+    
+    if (vibe === 'bad') {
+      const { error } = await supabase
+        .from('staff_tasks')
+        .insert([{
+          hostel_id: hostelInfo.id,
+          booking_id: bookingInfo.id,
+          title: `URGENT: Guest Satisfaction Alert`,
+          description: `${bookingInfo.guest_name} (Room ${bookingInfo.room_number}-${bookingInfo.bed_number}) is unhappy with their stay. Please talk to them immediately.`,
+          category: 'Guest Request',
+          status: 'Pending'
+        }]);
+      
+      if (!error) {
+        alert('We are sorry to hear that! A manager has been notified and will come talk to you shortly.');
+      }
     }
   };
 
@@ -182,6 +205,32 @@ const Dashboard = ({ hostelInfo, bookingInfo, orders, setOrders, allowRoomDelive
               </div>
             </div>
           </div>
+          
+          {/* Guest Satisfaction Meter */}
+          {showHappyMeter && (
+            <div className="glass-panel" style={{ border: '1px solid var(--border)', position: 'relative' }}>
+              <button 
+                onClick={() => setShowHappyMeter(false)} 
+                style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+              <h3 className="heading-2" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>How is your stay?</h3>
+              <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '1rem' }}>We want to make sure you're having the best time.</p>
+              
+              {!hasVoted ? (
+                <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '2rem' }}>
+                  <button onClick={() => handleSatisfactionVote('good')} style={{ background: 'none', border: 'none', cursor: 'pointer', filter: 'grayscale(1)', transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.filter='grayscale(0)'} onMouseLeave={e => e.target.style.filter='grayscale(1)'}>😊</button>
+                  <button onClick={() => handleSatisfactionVote('okay')} style={{ background: 'none', border: 'none', cursor: 'pointer', filter: 'grayscale(1)', transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.filter='grayscale(0)'} onMouseLeave={e => e.target.style.filter='grayscale(1)'}>😐</button>
+                  <button onClick={() => handleSatisfactionVote('bad')} style={{ background: 'none', border: 'none', cursor: 'pointer', filter: 'grayscale(1)', transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.filter='grayscale(0)'} onMouseLeave={e => e.target.style.filter='grayscale(1)'}>☹️</button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--secondary)', fontWeight: 600 }}>
+                  Thanks for your feedback! ❤️
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Quick Actions */}
           <div className="glass-panel">

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, CheckCircle, Clock, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, Plus, Trash2, History, ListTodo } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 const StaffHub = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
   const [newTask, setNewTask] = useState({ title: '', description: '', category: 'Admin' });
 
   useEffect(() => {
     fetchTasks();
     
-    // Real-time subscription
     const subscription = supabase
       .channel('staff_tasks_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, () => {
@@ -54,15 +54,20 @@ const StaffHub = () => {
   };
 
   const toggleStatus = async (task) => {
-    const newStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
+    const isCompleting = task.status !== 'Completed';
+    const newStatus = isCompleting ? 'Completed' : 'Pending';
+    
     await supabase
       .from('staff_tasks')
-      .update({ status: newStatus })
+      .update({ 
+        status: newStatus,
+        completed_at: isCompleting ? new Date().toISOString() : null
+      })
       .eq('id', task.id);
   };
 
   const deleteTask = async (id) => {
-    if (!window.confirm('Delete this task?')) return;
+    if (!window.confirm('Delete this task permanently?')) return;
     await supabase.from('staff_tasks').delete().eq('id', id);
   };
 
@@ -75,6 +80,10 @@ const StaffHub = () => {
     }
   };
 
+  const filteredTasks = tasks.filter(t => 
+    activeTab === 'active' ? t.status !== 'Completed' : t.status === 'Completed'
+  );
+
   return (
     <div className="glass-panel" style={{ marginTop: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
@@ -82,10 +91,32 @@ const StaffHub = () => {
           <h2 className="heading-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <ClipboardList size={24} color="var(--primary)" /> Staff Coordination Hub
           </h2>
-          <p className="text-muted">Track hostel tasks and maintenance issues.</p>
+          <p className="text-muted">Manage hostel tasks and operational history.</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
           <Plus size={18} /> {showAddForm ? 'Cancel' : 'New Task'}
+        </button>
+      </div>
+
+      {/* Internal Tabs */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+        <button 
+          onClick={() => setActiveTab('active')}
+          style={{ 
+            background: 'none', border: 'none', color: activeTab === 'active' ? 'var(--primary)' : 'var(--text-muted)', 
+            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0'
+          }}
+        >
+          <ListTodo size={18} /> Active Tasks ({tasks.filter(t => t.status !== 'Completed').length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('history')}
+          style={{ 
+            background: 'none', border: 'none', color: activeTab === 'history' ? 'var(--primary)' : 'var(--text-muted)', 
+            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0'
+          }}
+        >
+          <History size={18} /> History
         </button>
       </div>
 
@@ -104,11 +135,7 @@ const StaffHub = () => {
           <div className="grid-2" style={{ marginTop: '1rem' }}>
             <div className="input-group">
               <label>Category</label>
-              <select 
-                className="input-field" 
-                value={newTask.category} 
-                onChange={e => setNewTask({...newTask, category: e.target.value})}
-              >
+              <select className="input-field" value={newTask.category} onChange={e => setNewTask({...newTask, category: e.target.value})}>
                 <option value="Admin">Admin</option>
                 <option value="Cleaning">Cleaning</option>
                 <option value="Maintenance">Maintenance</option>
@@ -116,12 +143,8 @@ const StaffHub = () => {
               </select>
             </div>
             <div className="input-group">
-              <label>Description (Optional)</label>
-              <input 
-                className="input-field" 
-                value={newTask.description} 
-                onChange={e => setNewTask({...newTask, description: e.target.value})} 
-              />
+              <label>Description</label>
+              <input className="input-field" value={newTask.description} onChange={e => setNewTask({...newTask, description: e.target.value})} />
             </div>
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>Add Task</button>
@@ -129,61 +152,71 @@ const StaffHub = () => {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {loading && tasks.length === 0 ? (
-          <p className="text-muted" style={{ textAlign: 'center', padding: '2rem' }}>Syncing tasks...</p>
-        ) : tasks.length === 0 ? (
-          <p className="text-muted" style={{ textAlign: 'center', padding: '2rem' }}>No active tasks. Good job team!</p>
+        {loading && filteredTasks.length === 0 ? (
+          <p className="text-muted" style={{ textAlign: 'center', padding: '2rem' }}>Syncing...</p>
+        ) : filteredTasks.length === 0 ? (
+          <p className="text-muted" style={{ textAlign: 'center', padding: '2rem' }}>
+            {activeTab === 'active' ? "No active tasks. Everything is clean and working!" : "No history found yet."}
+          </p>
         ) : (
-          tasks.map(task => (
+          filteredTasks.map(task => (
             <div key={task.id} style={{ 
               padding: '1rem', 
-              backgroundColor: task.status === 'Completed' ? 'rgba(16, 185, 129, 0.05)' : 'var(--surface-hover)', 
+              backgroundColor: 'var(--surface)', 
               borderRadius: 'var(--radius-sm)', 
-              border: `1px solid ${task.status === 'Completed' ? 'var(--secondary)' : 'var(--border)'}`,
+              border: '1px solid var(--border)',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              opacity: task.status === 'Completed' ? 0.7 : 1
+              alignItems: 'center'
             }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <button 
-                  onClick={() => toggleStatus(task)}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: 'pointer', 
-                    color: task.status === 'Completed' ? 'var(--secondary)' : 'var(--text-muted)' 
-                  }}
-                >
-                  {task.status === 'Completed' ? <CheckCircle size={24} /> : <Clock size={24} />}
-                </button>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
+                <div style={{ 
+                  width: '4px', 
+                  height: '40px', 
+                  backgroundColor: getCategoryColor(task.category), 
+                  borderRadius: '2px' 
+                }}></div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <h3 style={{ 
-                      fontWeight: 600, 
-                      textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
-                      fontSize: '1rem'
-                    }}>
-                      {task.title}
-                    </h3>
+                    <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>{task.title}</h3>
                     <span style={{ 
-                      fontSize: '0.7rem', 
-                      fontWeight: 700, 
-                      color: 'white', 
+                      fontSize: '0.6rem', fontWeight: 800, color: 'white', 
                       backgroundColor: getCategoryColor(task.category),
-                      padding: '0.1rem 0.4rem',
-                      borderRadius: '0.25rem',
-                      textTransform: 'uppercase'
+                      padding: '0.1rem 0.4rem', borderRadius: '0.25rem', textTransform: 'uppercase'
                     }}>
                       {task.category}
                     </span>
                   </div>
-                  {task.description && <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{task.description}</p>}
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    {activeTab === 'active' 
+                      ? `Added ${new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      : `Completed ${new Date(task.completed_at).toLocaleDateString()}`
+                    }
+                    {task.description && ` • ${task.description}`}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => deleteTask(task.id)} className="btn" style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>
-                <Trash2 size={18} />
-              </button>
+              
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  onClick={() => toggleStatus(task)}
+                  className="btn" 
+                  style={{ 
+                    padding: '0.4rem 0.8rem', 
+                    fontSize: '0.75rem', 
+                    backgroundColor: task.status === 'Completed' ? 'var(--surface-hover)' : 'rgba(16, 185, 129, 0.1)',
+                    color: task.status === 'Completed' ? 'var(--text-muted)' : 'var(--secondary)',
+                    border: `1px solid ${task.status === 'Completed' ? 'var(--border)' : 'var(--secondary)'}`
+                  }}
+                >
+                  {task.status === 'Completed' ? 'Re-open' : 'Complete'}
+                </button>
+                {activeTab === 'history' && (
+                  <button onClick={() => deleteTask(task.id)} className="btn" style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}
